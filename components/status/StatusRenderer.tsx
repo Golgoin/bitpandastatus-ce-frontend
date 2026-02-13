@@ -13,17 +13,17 @@ import { formatStatusText } from '../../lib/status';
 
 export const STATUS_SYMBOLS: Record<string, React.ReactNode> = {
   true: (
-    <span title="True" aria-label="True" role="img">
+    <span title="Available" aria-label="Available" role="img">
       <FontAwesomeIcon icon={faCheck} className="text-grass-stain-green" aria-hidden="true" />
     </span>
   ),
   false: (
-    <span title="False" aria-label="False" role="img">
+    <span title="Unavailable" aria-label="Unavailable" role="img">
       <FontAwesomeIcon icon={faTimes} className="text-red-500" aria-hidden="true" />
     </span>
   ),
   null: (
-    <span title="False" aria-label="False" role="img">
+    <span title="Unavailable" aria-label="Unavailable" role="img">
       <FontAwesomeIcon icon={faTimes} className="text-red-500" aria-hidden="true" />
     </span>
   ),
