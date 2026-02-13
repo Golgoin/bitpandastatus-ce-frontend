@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --grass-stain-green: #d4fd35;
+  --grass-stain-green-dark: #d5fd3586;
+  --platinum-gray: #bdbdbd;
+  --deep-evergreen: #1e3930;
+  --obsidian-forest: #01201a;
+  --roadmap-upcoming: #92400e;
+  --roadmap-upcoming-hover: #d97706;
+  --roadmap-ongoing: #d5fd3586;
+  --roadmap-ongoing-hover: #d4fd35;
+  --roadmap-done: #14532d;
+  --roadmap-done-hover: #a5d6a7;
+	--roadmap-background: #2a2a2a;
+	--roadmap-border: #404040;
+  --negative-red: #ff4d4d;
+  --gradient-end: #0A0A0A;
+  --colors-neutrals-card_fill_primary: rgba(19, 20, 23, 1);
+  --colors-neutrals-card_fill_secondary: rgba(34, 34, 34, 1);    
+  --colors-screen_background-primary: rgba(5, 5, 5, 1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-grass-stain-green: var(--grass-stain-green);
+  --color-platinum-gray: var(--platinum-gray);
+  --color-deep-evergreen: var(--deep-evergreen);
+  --color-obsidian-forest: var(--obsidian-forest);
+  --color-gradient-start: var(--obsidian-forest);
+  --color-gradient-end: var(--gradient-end);
+  --color-roadmap-upcoming: var(--roadmap-upcoming);
+  --color-roadmap-upcoming-hover: var(--roadmap-upcoming-hover);
+  --color-roadmap-ongoing: var(--roadmap-ongoing);
+  --color-roadmap-ongoing-hover: var(--roadmap-ongoing-hover);
+  --color-roadmap-done: var(--roadmap-done);
+  --color-roadmap-done-hover: var(--roadmap-done-hover);
+  --color-roadmap-background: var(--roadmap-background);
+  --color-roadmap-border: var(--roadmap-border);
+  --color-negative-red: var(--negative-red);
+  --color-neutrals-card_fill_primary: var(--colors-neutrals-card_fill_primary);
+  --color-neutrals-card_fill_secondary: var(--colors-neutrals-card_fill_secondary);
+  --color-screen_background-primary: var(--colors-screen_background-primary);
+  --breakpoint-xs: 30rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--deep-evergreen);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--grass-stain-green);
+}
+
+/* Utility to hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
