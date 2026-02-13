@@ -142,12 +142,12 @@ npm run start
 Use a reverse proxy (Nginx/Caddy) for TLS and public domain routing.
 
 ## Project Structure
-- `app/` — App Router route files + client shell
+- `app/` — App Router route files + client shell + robots + sitemap
 - `components/` — shared UI and status section components
 - `features/` — feature-scoped hooks/types (`status/*`)
 - `lib/` — API + shared contracts/helpers
 - `docs/` — architecture and SSR/SEO guardrail contract
-- `public/` — static assets, robots, sitemap
+- `public/` — static assets
 
 ## Contributing
 See [CONTRIBUTING.md](CONTRIBUTING.md).

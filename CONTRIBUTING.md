@@ -76,7 +76,7 @@ npm run verify
 
 This runs:
 - `npm run lint`
-- `npm run build
+- `npm run build`
 
 ## Documentation to Check When Refactoring
 - `docs/architecture-guardrails.md`

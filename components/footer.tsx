@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
                 {socialXUrl && socialXHandle && (
                     <div className="flex flex-row gap-1">
                         <span>Created by</span>
-                        <a href={socialXUrl} target="_blank">{socialXHandle}</a>
+                        <a href={socialXUrl} target="_blank" rel="noopener noreferrer">{socialXHandle}</a>
                     </div>
                 )}
             </div>
