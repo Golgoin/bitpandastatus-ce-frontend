@@ -269,8 +269,11 @@ export async function getAssetData() {
     const statusApiBaseUrl = process.env.STATUS_API_BASE_URL ?? 'https://bitpandastatus.info';
     const statusApiSettingsUrl = process.env.STATUS_API_SETTINGS_URL
       ?? `${statusApiBaseUrl}/api/settings`;
-    const statusApiUpdatesUrl = process.env.STATUS_API_UPDATES_URL
+    const statusApiUpdatesBaseUrl = process.env.STATUS_API_UPDATES_URL
       ?? `${statusApiBaseUrl}/api/updates`;
+    const statusApiUpdatesUrl = statusApiUpdatesBaseUrl.includes('?')
+      ? `${statusApiUpdatesBaseUrl}&limit=5000`
+      : `${statusApiUpdatesBaseUrl}?limit=5000`;
     const bitpandaNewAssetsUrl = process.env.BITPANDA_NEW_ASSETS_URL
       ?? 'https://api.bitpanda.com/v1/prices/assets/new';
 
