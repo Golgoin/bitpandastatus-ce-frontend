@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getAssetData } from '../../lib/api';
 import type { SearchParamsRecord } from '../../lib/contracts';
+import { getSearchParamString } from '../../lib/url';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,10 +11,6 @@ interface SymbolAliasPageProps {
   params: Promise<{ symbol: string }>;
   searchParams: Promise<SearchParamsRecord>;
 }
-
-const getSearchParamString = (value: string | string[] | undefined) => (
-  Array.isArray(value) ? value[0] ?? '' : value ?? ''
-);
 
 const isValidSymbol = (symbol: string) => /^[a-z0-9]{2,15}$/i.test(symbol);
 

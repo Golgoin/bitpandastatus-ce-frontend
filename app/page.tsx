@@ -6,16 +6,13 @@ import BitpandaStatusClient from './BitpandaStatusClient';
 import { getAssetData, type UpdateLog } from '../lib/api';
 import type { SearchParamsRecord, UpdateLogWithPin } from '../lib/contracts';
 import { getUpdateStatusToken, statusToText } from '../lib/status';
+import { getSearchParamString } from '../lib/url';
 import Footer from "../components/footer";
 
 export const dynamic = 'force-dynamic';
 
 const ASSET_NOT_FOUND_FLASH_ROUTE = '/api/flash-asset-not-found';
 const ASSET_NOT_FOUND_COOKIE = 'bp_asset_not_found';
-
-const getSearchParamString = (value: string | string[] | undefined) => (
-  Array.isArray(value) ? value[0] ?? '' : value ?? ''
-);
 
 const buildFlashRedirectUrl = (symbol: string, returnTo: string) => (
   `${ASSET_NOT_FOUND_FLASH_ROUTE}?symbol=${encodeURIComponent(symbol)}&returnTo=${encodeURIComponent(returnTo)}`

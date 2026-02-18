@@ -5,7 +5,6 @@ export interface AssetNetwork {
   name: string;
   logo_dark: string | null;
   coin_network_id: string | null;
-  is_default: boolean;
   is_deposit_allowed: boolean;
   is_withdraw_allowed: boolean;
   is_operational: boolean;
@@ -93,7 +92,6 @@ interface RawAssetNetwork {
   name: string;
   logo_dark?: string | null;
   coin_network_id?: string | null;
-  is_default?: boolean | null;
   is_deposit_allowed?: boolean | null;
   is_withdraw_allowed?: boolean | null;
   is_operational?: boolean | null;
@@ -301,7 +299,6 @@ const normalizeAssetNetworks = (rawNetworks: unknown): AssetNetwork[] => {
       logo_dark: normalizeOptionalString(network.logo_dark),
       coin_network_id: normalizeOptionalString(network.coin_network_id),
       // /settings omits false booleans for these network flags.
-      is_default: network.is_default ?? false,
       is_deposit_allowed: network.is_deposit_allowed ?? false,
       is_withdraw_allowed: network.is_withdraw_allowed ?? false,
       is_operational: network.is_operational ?? false,

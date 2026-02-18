@@ -329,17 +329,16 @@ export default function AssetDetailsModal({
             ))}
           </section>
 
-          <div>
-            {networks.length > 0 ? (
-              <section className="bg-neutrals-card_fill_primary/10 border-b border-roadmap-border overflow-hidden">
-                <div className="flex items-center px-3 py-2 border-b border-roadmap-border">
-                  <span className="text-xs w-9 text-center font-bold px-2 py-0.5 rounded mr-3 bg-deep-evergreen text-grass-stain-green">
-                    {networks.length}
-                  </span>
-                  <span className="text-sm sm:text-base text-white font-bold">Available Networks</span>
-                </div>
+          {networks.length > 0 ? (
+            <section className="bg-neutrals-card_fill_primary/10 border-b border-roadmap-border overflow-hidden">
+              <div className="flex items-center px-3 py-2 border-b border-roadmap-border">
+                <span className="text-xs w-9 text-center font-bold px-2 py-0.5 rounded mr-3 bg-deep-evergreen text-grass-stain-green">
+                  {networks.length}
+                </span>
+                <span className="text-sm sm:text-base text-white font-bold">Available Networks</span>
+              </div>
 
-                <div className="overflow-x-auto overflow-y-auto max-h-[28vh] bg-neutrals-card_fill_primary/10">
+              <div className="overflow-x-auto overflow-y-auto max-h-[28vh] bg-neutrals-card_fill_primary/10">
                 <table className="w-full text-xs sm:text-sm text-platinum-gray" aria-label="Available asset networks">
                   <thead className="text-xs border-b border-roadmap-border sticky top-0 bg-neutrals-card_fill_primary z-10">
                     <tr>
@@ -380,18 +379,18 @@ export default function AssetDetailsModal({
                   </tbody>
                 </table>
               </div>
-              </section>
-            ) : null}
+            </section>
+          ) : null}
 
-            <section className="bg-neutrals-card_fill_primary/10 border-b border-roadmap-border overflow-hidden">
-              <div className="flex items-center px-3 py-2 border-b border-roadmap-border">
-                <span className="text-xs w-9 text-center font-bold px-2 py-0.5 rounded mr-3 bg-deep-evergreen text-grass-stain-green">
-                  {updates.length}
-                </span>
-                <span className="text-sm sm:text-base text-white font-bold">Associated Updates</span>
-              </div>
+          <section className="bg-neutrals-card_fill_primary/10 border-b border-roadmap-border overflow-hidden">
+            <div className="flex items-center px-3 py-2 border-b border-roadmap-border">
+              <span className="text-xs w-9 text-center font-bold px-2 py-0.5 rounded mr-3 bg-deep-evergreen text-grass-stain-green">
+                {updates.length}
+              </span>
+              <span className="text-sm sm:text-base text-white font-bold">Associated Updates</span>
+            </div>
 
-              <div className="overflow-x-auto overflow-y-auto max-h-[24vh] bg-neutrals-card_fill_primary/10">
+            <div className="overflow-x-auto overflow-y-auto max-h-[24vh] bg-neutrals-card_fill_primary/10">
               {updates.length === 0 ? (
                 <div className="text-sm text-platinum-gray py-8 text-center">No updates found for this asset.</div>
               ) : (
@@ -449,6 +448,5 @@ export default function AssetDetailsModal({
         </div>
       </div>
     </div>
-  </div>
   );
 }
