@@ -5,10 +5,10 @@ export interface AssetNetwork {
   name: string;
   logo_dark: string | null;
   coin_network_id: string | null;
-  is_default: boolean | null;
-  is_deposit_allowed: boolean | null;
-  is_withdraw_allowed: boolean | null;
-  is_operational: boolean | null;
+  is_default: boolean;
+  is_deposit_allowed: boolean;
+  is_withdraw_allowed: boolean;
+  is_operational: boolean;
   min_deposit_threshold: string | null;
   small_deposit_threshold: string | null;
   small_deposit_fee: string | null;

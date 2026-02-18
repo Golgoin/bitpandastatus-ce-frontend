@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faInfo, faShareNodes, faTimes } from '@fortawesome/free-solid-svg-icons';
@@ -96,7 +96,6 @@ const NETWORK_BOOLEAN_SETTING_KEYS: Array<keyof AssetNetwork> = [
 
 const formatNetworkSettingValue = (key: keyof AssetNetwork, value: AssetNetwork[keyof AssetNetwork]) => {
   if (NETWORK_BOOLEAN_SETTING_KEYS.includes(key)) {
-    if (value === null) return STATUS_SYMBOLS.null;
     if (typeof value === 'boolean') return STATUS_SYMBOLS[String(value)];
     return '-';
   }
@@ -113,6 +112,32 @@ export default function AssetDetailsModal({
   renderDescriptionLine,
 }: AssetDetailsModalProps) {
   const [expandedUpdates, setExpandedUpdates] = useState<Set<number>>(new Set());
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showShareFeedback = useCallback((message: string) => {
+    setShareFeedback(message);
+
+    if (shareFeedbackTimeoutRef.current) {
+      clearTimeout(shareFeedbackTimeoutRef.current);
+    }
+
+    shareFeedbackTimeoutRef.current = setTimeout(() => {
+      setShareFeedback(null);
+      shareFeedbackTimeoutRef.current = null;
+    }, 2200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (shareFeedbackTimeoutRef.current) {
+        clearTimeout(shareFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const toggleUpdate = useCallback((index: number) => {
     setExpandedUpdates(prev => {
@@ -126,31 +151,100 @@ export default function AssetDetailsModal({
     });
   }, []);
 
-  const shareDetails = useCallback(() => {
+  const shareDetails = useCallback(async () => {
     const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Status Dashboard';
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({
-        title: siteName,
-        url: window.location.href,
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('URL copied to clipboard!');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: siteName,
+          url: window.location.href,
+        });
+      } catch (error) {
+        if ((error as DOMException)?.name !== 'AbortError') {
+          console.error(error);
+        }
+      }
+      return;
     }
-  }, []);
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showShareFeedback('URL copied to clipboard.');
+    } catch (error) {
+      console.error(error);
+      showShareFeedback('Could not copy URL.');
+    }
+  }, [showShareFeedback]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
 
+    const dialog = dialogRef.current;
+
+    const getFocusableElements = () => {
+      if (!dialog) return [] as HTMLElement[];
+
+      return Array.from(dialog.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+    };
+
+    const focusInitialElement = () => {
+      if (closeButtonRef.current) {
+        closeButtonRef.current.focus();
+        return;
+      }
+
+      const [firstFocusable] = getFocusableElements();
+      if (firstFocusable) {
+        firstFocusable.focus();
+        return;
+      }
+
+      dialog?.focus();
+    };
+
+    const frame = requestAnimationFrame(focusInitialElement);
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        event.preventDefault();
         onClose();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+
+      const focusableElements = getFocusableElements();
+      if (focusableElements.length === 0) {
+        event.preventDefault();
+        dialog?.focus();
+        return;
+      }
+
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey) {
+        if (activeElement === firstElement || activeElement === dialog) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+        return;
+      }
+
+      if (activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
 
     return () => {
+      cancelAnimationFrame(frame);
       document.body.style.overflow = '';
       window.removeEventListener('keydown', onKeyDown);
     };
@@ -164,9 +258,11 @@ export default function AssetDetailsModal({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="asset-details-title"
+        tabIndex={-1}
         className="w-[96vw] md:w-[88vw] xl:w-[78vw] max-w-[640px] max-h-[92vh] bg-neutrals-card_fill_primary border border-roadmap-border rounded-xl shadow-2xl overflow-hidden"
         onClick={(event) => event.stopPropagation()}
       >
@@ -196,6 +292,7 @@ export default function AssetDetailsModal({
             </button>
 
             <button
+              ref={closeButtonRef}
               type="button"
               aria-label="Close asset details"
               className="text-platinum-gray hover:text-white transition-colors cursor-pointer p-2"
@@ -205,6 +302,12 @@ export default function AssetDetailsModal({
             </button>
           </div>
         </div>
+
+        {shareFeedback ? (
+          <p role="status" aria-live="polite" className="px-4 pt-2 text-xs text-grass-stain-green">
+            {shareFeedback}
+          </p>
+        ) : null}
 
         <div className="overflow-y-auto max-h-[calc(92vh-88px)]">
           <section className="bg-neutrals-card_fill_primary/10 border-b border-roadmap-border overflow-hidden">
@@ -241,9 +344,9 @@ export default function AssetDetailsModal({
                   <thead className="text-xs border-b border-roadmap-border sticky top-0 bg-neutrals-card_fill_primary z-10">
                     <tr>
                       <th className="p-0.5 pl-2 text-left">Network</th>
-                      <th className="p-0.5 text-center">Op</th>
-                      <th className="p-0.5 text-center">Dep</th>
-                      <th className="p-0.5 text-center">Wdr</th>
+                      <th className="p-0.5 text-center" title="Operational" aria-label="Operational">Op</th>
+                      <th className="p-0.5 text-center" title="Deposit allowed" aria-label="Deposit allowed">Dep</th>
+                      <th className="p-0.5 text-center" title="Withdraw allowed" aria-label="Withdraw allowed">Wdr</th>
                       <th className="p-0.5 text-right">Min dep.</th>
                       <th className="p-0.5 text-right">Small dep.</th>
                       <th className="p-0.5 pr-2 text-right">Fee</th>

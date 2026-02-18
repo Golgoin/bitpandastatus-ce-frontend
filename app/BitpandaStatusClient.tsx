@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AssetSetting } from '../lib/api';
 import type { SearchParamsRecord, StatusPageData, UpdateLogWithPin } from '../lib/contracts';
 import SearchAndFilters from '../components/status/SearchAndFilters';
@@ -66,6 +66,33 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
     if (!detailsParam || !data?.settings?.length) return null;
     return data.settings.find(asset => asset.symbol.trim().toLowerCase() === detailsParam) ?? null;
   });
+  const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const wasModalOpenRef = useRef(false);
+  const detailsHistoryPushedRef = useRef(false);
+  const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showShareFeedback = useCallback((message: string) => {
+    setShareFeedback(message);
+
+    if (shareFeedbackTimeoutRef.current) {
+      clearTimeout(shareFeedbackTimeoutRef.current);
+    }
+
+    shareFeedbackTimeoutRef.current = setTimeout(() => {
+      setShareFeedback(null);
+      shareFeedbackTimeoutRef.current = null;
+    }, 2200);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (shareFeedbackTimeoutRef.current) {
+        clearTimeout(shareFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const resetPagination = useCallback(() => {
     setVisibleUpdatesCount(200);
@@ -98,7 +125,7 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
     return settings.find(asset => asset.symbol.trim().toLowerCase() === normalizedSymbol) ?? null;
   }, [settings]);
 
-  const updateDetailsParam = useCallback((symbolParam: string | null) => {
+  const setDetailsParamInHistory = useCallback((symbolParam: string | null, mode: 'push' | 'replace') => {
     if (typeof window === 'undefined') return;
 
     const params = new URLSearchParams(window.location.search);
@@ -112,23 +139,50 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
 
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+
+    if (mode === 'push') {
+      window.history.pushState(null, '', nextUrl);
+      return;
+    }
+
     window.history.replaceState(null, '', nextUrl);
   }, []);
 
   const openAssetDetails = useCallback((asset: AssetSetting) => {
+    if (typeof window !== 'undefined') {
+      const activeElement = document.activeElement;
+      lastFocusedElementRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+
+      const params = new URLSearchParams(window.location.search);
+      const hasCurrentDetails = Boolean((params.get('details') || '').trim());
+      const mode: 'push' | 'replace' = hasCurrentDetails ? 'replace' : 'push';
+      detailsHistoryPushedRef.current = mode === 'push';
+      setDetailsParamInHistory(asset.symbol, mode);
+    }
+
     setSelectedAsset(asset);
-    updateDetailsParam(asset.symbol);
-  }, [updateDetailsParam]);
+  }, [setDetailsParamInHistory]);
 
   const closeAssetDetails = useCallback(() => {
+    if (typeof window !== 'undefined' && detailsHistoryPushedRef.current) {
+      detailsHistoryPushedRef.current = false;
+      window.history.back();
+      return;
+    }
+
     setSelectedAsset(null);
-    updateDetailsParam(null);
-  }, [updateDetailsParam]);
+    setDetailsParamInHistory(null, 'replace');
+  }, [setDetailsParamInHistory]);
 
   const applySelectedAssetFromUrl = useCallback(() => {
     if (typeof window === 'undefined') return;
+
     const params = new URLSearchParams(window.location.search);
-    const assetFromUrl = findAssetBySymbol(params.get('details'));
+    const detailsParam = params.get('details');
+
+    detailsHistoryPushedRef.current = Boolean((detailsParam || '').trim());
+
+    const assetFromUrl = findAssetBySymbol(detailsParam);
     setSelectedAsset(assetFromUrl);
   }, [findAssetBySymbol]);
 
@@ -140,6 +194,22 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
 
     return () => window.removeEventListener('popstate', onPopState);
   }, [settings, applySelectedAssetFromUrl]);
+
+  useEffect(() => {
+    if (selectedAsset) {
+      wasModalOpenRef.current = true;
+      return;
+    }
+
+    if (!wasModalOpenRef.current) return;
+
+    wasModalOpenRef.current = false;
+    const elementToFocus = lastFocusedElementRef.current;
+
+    if (elementToFocus) {
+      requestAnimationFrame(() => elementToFocus.focus());
+    }
+  }, [selectedAsset]);
 
   const selectedAssetUpdates = useMemo<UpdateLogWithPin[]>(() => {
     if (!selectedAsset || !updates?.length) return [];
@@ -161,18 +231,31 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
     });
   }, []);
 
-  const shareSearch = useCallback(() => {
+  const shareSearch = useCallback(async () => {
     const siteName = process.env.NEXT_PUBLIC_SITE_NAME ?? 'Status Dashboard';
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({
-        title: siteName,
-        url: window.location.href,
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('URL copied to clipboard!');
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: siteName,
+          url: window.location.href,
+        });
+      } catch (error) {
+        if ((error as DOMException)?.name !== 'AbortError') {
+          console.error(error);
+        }
+      }
+      return;
     }
-  }, []);
+
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showShareFeedback('URL copied to clipboard.');
+    } catch (error) {
+      console.error(error);
+      showShareFeedback('Could not copy URL.');
+    }
+  }, [showShareFeedback]);
 
   const renderDescriptionLine = useCallback((line: string) => {
     const regex = /<a\s+href=['"]([^'"]+)['"]>(.*?)<\/a>/gi;
@@ -225,6 +308,12 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
         onShareSearch={shareSearch}
         onToggleFilter={toggleFilter}
       />
+
+      {shareFeedback ? (
+        <p role="status" aria-live="polite" className="text-center text-xs text-grass-stain-green">
+          {shareFeedback}
+        </p>
+      ) : null}
 
       <UpdatesSection
         updates={importantUpdates}

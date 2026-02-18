@@ -12,7 +12,7 @@ Community-maintained status dashboard for Bitpanda assets and components.
 - Highlights maintenance/new assets in the asset list.
 - Surfaces component update history with pinned active incidents.
 - Supports search and filters with URL-synced state for easy sharing.
-- Opens a per-asset details modal from the table with deep-linkable state (`?details=<symbol>`).
+- Opens a per-asset details modal from the table with deep-linkable state (`?details=<symbol>`), back-button close support, and keyboard focus trapping.
 - Supports symbol alias links via `/<symbol>` (redirects to `/?details=<symbol>`).
 - Shows available networks per asset (operational/deposit/withdraw flags + thresholds/fees).
 - Provides SSR metadata and JSON-LD for crawlability.

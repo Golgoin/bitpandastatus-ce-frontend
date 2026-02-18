@@ -80,9 +80,12 @@ Implementation details:
 3. Preserve URL query parameter keys and semantics:
    - filters/search: `search`, `maintenance`, `tradeOnly`, `fullyIntegrated`, `stakeable`, `newAssets`, `fusion`, `limitOrder`, `margin`
    - asset details deep-link: `details`
-4. Keep `app/[symbol]/page.tsx` as alias redirect behavior to `/?details=<symbol>`.
-5. Do not replace server primary data fetch with client-side fetch.
-6. Keep both JSON-LD script injections (layout + page).
+4. Preserve modal URL/history UX for `details`:
+   - opening asset details should create a history entry (back button closes modal)
+   - closing must keep existing non-`details` query params intact
+5. Keep `app/[symbol]/page.tsx` as alias redirect behavior to `/?details=<symbol>`.
+6. Do not replace server primary data fetch with client-side fetch.
+7. Keep both JSON-LD script injections (layout + page).
 
 # SSR/SEO Guardrails & Docs
 - Single contract doc: `docs/architecture-guardrails.md`
