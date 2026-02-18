@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
         hostname: 'cdn.bitpanda.com',
       },
     ],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
   },
 };
 

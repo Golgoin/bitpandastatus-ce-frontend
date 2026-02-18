@@ -261,7 +261,6 @@ export default function AssetDetailsModal({
                                 width={16}
                                 height={16}
                                 className="rounded-full"
-                                unoptimized
                               />
                             ) : null}
                             <span className="truncate">{network.name}</span>
