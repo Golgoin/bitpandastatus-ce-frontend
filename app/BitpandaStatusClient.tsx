@@ -10,9 +10,12 @@ import AssetDetailsModal from '../components/status/AssetDetailsModal';
 import { useStatusUrlState } from '../features/status/hooks/useStatusUrlState';
 import { useStatusData } from '../features/status/hooks/useStatusData';
 
+const ASSET_NOT_FOUND_COOKIE = 'bp_asset_not_found';
+
 interface BitpandaStatusClientProps {
   data: StatusPageData | null;
   searchParams: SearchParamsRecord;
+  assetNotFoundSymbol?: string | null;
 }
 
 const getSearchParamString = (value: string | string[] | undefined) => (
@@ -57,7 +60,11 @@ const matchesAssetUpdate = (asset: AssetSetting, update: UpdateLogWithPin) => {
   return description.includes(fullLabelLower);
 };
 
-export default function BitpandaStatusClient({ data, searchParams }: BitpandaStatusClientProps) {
+export default function BitpandaStatusClient({
+  data,
+  searchParams,
+  assetNotFoundSymbol,
+}: BitpandaStatusClientProps) {
   const [expandedUpdates, setExpandedUpdates] = useState<Set<number>>(new Set());
   const [visibleUpdatesCount, setVisibleUpdatesCount] = useState(200);
   const [expandedGroupAssets, setExpandedGroupAssets] = useState<Set<string>>(new Set());
@@ -67,11 +74,16 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
     return data.settings.find(asset => asset.symbol.trim().toLowerCase() === detailsParam) ?? null;
   });
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
+  const [assetNotFoundFeedback, setAssetNotFoundFeedback] = useState<string | null>(() => {
+    if (!assetNotFoundSymbol) return null;
+    return `Asset "${assetNotFoundSymbol.toUpperCase()}" was not found.`;
+  });
 
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
   const wasModalOpenRef = useRef(false);
   const detailsHistoryPushedRef = useRef(false);
   const shareFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const assetNotFoundTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showShareFeedback = useCallback((message: string) => {
     setShareFeedback(message);
@@ -87,9 +99,28 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
   }, []);
 
   useEffect(() => {
+    if (!assetNotFoundSymbol) return;
+
+    document.cookie = `${ASSET_NOT_FOUND_COOKIE}=; path=/; max-age=0; samesite=lax`;
+
+    if (assetNotFoundTimeoutRef.current) {
+      clearTimeout(assetNotFoundTimeoutRef.current);
+    }
+
+    assetNotFoundTimeoutRef.current = setTimeout(() => {
+      setAssetNotFoundFeedback(null);
+      assetNotFoundTimeoutRef.current = null;
+    }, 4000);
+  }, [assetNotFoundSymbol]);
+
+  useEffect(() => {
     return () => {
       if (shareFeedbackTimeoutRef.current) {
         clearTimeout(shareFeedbackTimeoutRef.current);
+      }
+
+      if (assetNotFoundTimeoutRef.current) {
+        clearTimeout(assetNotFoundTimeoutRef.current);
       }
     };
   }, []);
@@ -308,6 +339,12 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
         onShareSearch={shareSearch}
         onToggleFilter={toggleFilter}
       />
+
+      {assetNotFoundFeedback ? (
+        <p role="status" aria-live="polite" className="text-center text-xs text-yellow-300">
+          {assetNotFoundFeedback}
+        </p>
+      ) : null}
 
       {shareFeedback ? (
         <p role="status" aria-live="polite" className="text-center text-xs text-grass-stain-green">
