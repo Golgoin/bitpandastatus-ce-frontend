@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { getAssetData } from '../../lib/api';
 import type { SearchParamsRecord } from '../../lib/contracts';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,19 @@ export default async function SymbolAliasPage(props: SymbolAliasPageProps) {
 
   if (!isValidSymbol(normalizedSymbol)) {
     notFound();
+  }
+
+  const data = await getAssetData();
+
+  // Avoid false 404s when upstream APIs are temporarily unavailable.
+  if (data?.settings?.length) {
+    const symbolExists = data.settings.some(
+      asset => asset.symbol.trim().toLowerCase() === normalizedSymbol
+    );
+
+    if (!symbolExists) {
+      notFound();
+    }
   }
 
   const nextParams = new URLSearchParams();
