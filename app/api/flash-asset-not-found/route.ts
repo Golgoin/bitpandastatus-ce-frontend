@@ -25,7 +25,14 @@ export async function GET(request: NextRequest) {
   const rawReturnTo = request.nextUrl.searchParams.get('returnTo');
   const returnTo = normalizeReturnTo(rawReturnTo);
 
-  const response = NextResponse.redirect(new URL(returnTo, request.url));
+  // Use a relative Location header so the browser keeps the public host.
+  const response = new NextResponse(null, {
+    status: 302,
+    headers: {
+      Location: returnTo,
+    },
+  });
+
   response.cookies.set({
     name: FLASH_COOKIE_NAME,
     value: normalizedSymbol,
