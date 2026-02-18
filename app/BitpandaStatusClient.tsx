@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
-import type { SearchParamsRecord, StatusPageData } from '../lib/contracts';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { AssetSetting } from '../lib/api';
+import type { SearchParamsRecord, StatusPageData, UpdateLogWithPin } from '../lib/contracts';
 import SearchAndFilters from '../components/status/SearchAndFilters';
 import UpdatesSection from '../components/status/UpdatesSection';
 import AssetGroupsSection from '../components/status/AssetGroupsSection';
+import AssetDetailsModal from '../components/status/AssetDetailsModal';
 import { useStatusUrlState } from '../features/status/hooks/useStatusUrlState';
 import { useStatusData } from '../features/status/hooks/useStatusData';
 
@@ -13,10 +15,57 @@ interface BitpandaStatusClientProps {
   searchParams: SearchParamsRecord;
 }
 
+const getSearchParamString = (value: string | string[] | undefined) => (
+  Array.isArray(value) ? value[0] ?? '' : value ?? ''
+);
+
+const normalizeText = (value: string) => (
+  value
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+);
+
+const matchesAssetUpdate = (asset: AssetSetting, update: UpdateLogWithPin) => {
+  const symbol = (asset.symbol || '').trim();
+  const name = (asset.name || '').trim();
+  if (!symbol && !name) return false;
+
+  const symbolLower = symbol.toLowerCase();
+  const nameLower = normalizeText(name);
+  const fullLabelLower = normalizeText(`${name} (${symbol})`);
+
+  const componentName = normalizeText(update.component_name || '');
+  if (componentName === fullLabelLower || (nameLower && componentName === nameLower)) {
+    return true;
+  }
+
+  const rawComponentName = (update.component_name || '').trim();
+  const componentSymbolMatch = rawComponentName.match(/\(([^()]+)\)\s*$/);
+  if (componentSymbolMatch?.[1]?.trim().toLowerCase() === symbolLower) {
+    const componentNameWithoutSymbol = normalizeText(rawComponentName.replace(/\(([^()]+)\)\s*$/, ''));
+    if (!nameLower || componentNameWithoutSymbol === nameLower) {
+      return true;
+    }
+  }
+
+  const description = normalizeText(update.description || '');
+  if (!description) return false;
+
+  return description.includes(fullLabelLower);
+};
+
 export default function BitpandaStatusClient({ data, searchParams }: BitpandaStatusClientProps) {
   const [expandedUpdates, setExpandedUpdates] = useState<Set<number>>(new Set());
   const [visibleUpdatesCount, setVisibleUpdatesCount] = useState(200);
   const [expandedGroupAssets, setExpandedGroupAssets] = useState<Set<string>>(new Set());
+  const [selectedAsset, setSelectedAsset] = useState<AssetSetting | null>(() => {
+    const detailsParam = getSearchParamString(searchParams?.details).trim().toLowerCase();
+    if (!detailsParam || !data?.settings?.length) return null;
+    return data.settings.find(asset => asset.symbol.trim().toLowerCase() === detailsParam) ?? null;
+  });
 
   const resetPagination = useCallback(() => {
     setVisibleUpdatesCount(200);
@@ -38,6 +87,67 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
     filters,
     debouncedSearch,
   });
+
+  const updates = data?.updates;
+  const settings = data?.settings;
+
+  const findAssetBySymbol = useCallback((symbolParam: string | null) => {
+    const normalizedSymbol = (symbolParam || '').trim().toLowerCase();
+    if (!normalizedSymbol || !settings?.length) return null;
+
+    return settings.find(asset => asset.symbol.trim().toLowerCase() === normalizedSymbol) ?? null;
+  }, [settings]);
+
+  const updateDetailsParam = useCallback((symbolParam: string | null) => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const normalizedSymbol = (symbolParam || '').trim().toLowerCase();
+
+    if (normalizedSymbol) {
+      params.set('details', normalizedSymbol);
+    } else {
+      params.delete('details');
+    }
+
+    const query = params.toString();
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(null, '', nextUrl);
+  }, []);
+
+  const openAssetDetails = useCallback((asset: AssetSetting) => {
+    setSelectedAsset(asset);
+    updateDetailsParam(asset.symbol);
+  }, [updateDetailsParam]);
+
+  const closeAssetDetails = useCallback(() => {
+    setSelectedAsset(null);
+    updateDetailsParam(null);
+  }, [updateDetailsParam]);
+
+  const applySelectedAssetFromUrl = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const assetFromUrl = findAssetBySymbol(params.get('details'));
+    setSelectedAsset(assetFromUrl);
+  }, [findAssetBySymbol]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !settings?.length) return;
+
+    const onPopState = () => applySelectedAssetFromUrl();
+    window.addEventListener('popstate', onPopState);
+
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [settings, applySelectedAssetFromUrl]);
+
+  const selectedAssetUpdates = useMemo<UpdateLogWithPin[]>(() => {
+    if (!selectedAsset || !updates?.length) return [];
+
+    return updates
+      .filter((update) => matchesAssetUpdate(selectedAsset, update))
+      .sort((a, b) => new Date(b.changed_at).getTime() - new Date(a.changed_at).getTime());
+  }, [selectedAsset, updates]);
 
   const toggleUpdate = useCallback((idx: number) => {
     setExpandedUpdates(prev => {
@@ -104,17 +214,6 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
       <header className="grid grid-cols-1 text-center mb-2">
         <h1 className="text-2xl sm:text-3xl font-sans text-white">Bitpanda Status</h1>
         <h2 className="text-lg sm:text-xl font-medium text-grass-stain-green mb-1">Community Edition</h2>
-        <p className="text-sm sm:text-base font-light text-white">
-          Your community made alternative for{' '}
-          <a
-            href="https://status.bitpanda.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline font-medium"
-          >
-            status.bitpanda.com
-          </a>
-        </p>
       </header>
 
       <SearchAndFilters
@@ -141,6 +240,7 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
         debouncedSearch={debouncedSearch}
         expandedGroupAssets={expandedGroupAssets}
         onExpandGroup={(groupKey) => setExpandedGroupAssets(prev => new Set([...prev, groupKey]))}
+        onAssetClick={openAssetDetails}
       />
 
       <section className="text-center pt-8 pb-4">
@@ -157,6 +257,15 @@ export default function BitpandaStatusClient({ data, searchParams }: BitpandaSta
           .
         </p>
       </section>
+
+      {selectedAsset ? (
+        <AssetDetailsModal
+          asset={selectedAsset}
+          updates={selectedAssetUpdates}
+          onClose={closeAssetDetails}
+          renderDescriptionLine={renderDescriptionLine}
+        />
+      ) : null}
     </main>
   );
 }

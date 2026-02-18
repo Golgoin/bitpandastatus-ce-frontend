@@ -12,6 +12,9 @@ Community-maintained status dashboard for Bitpanda assets and components.
 - Highlights maintenance/new assets in the asset list.
 - Surfaces component update history with pinned active incidents.
 - Supports search and filters with URL-synced state for easy sharing.
+- Opens a per-asset details modal from the table with deep-linkable state (`?details=<symbol>`).
+- Supports symbol alias links via `/<symbol>` (redirects to `/?details=<symbol>`).
+- Shows available networks per asset (operational/deposit/withdraw flags + thresholds/fees).
 - Provides SSR metadata and JSON-LD for crawlability.
 
 ## Stack
@@ -28,6 +31,10 @@ Community-maintained status dashboard for Bitpanda assets and components.
   - server fetch (`getAssetData()`)
   - server-side `applyUpdatePinning(...)`
   - page JSON-LD
+- `app/[symbol]/page.tsx`
+  - symbol-alias route
+  - validates symbol and redirects to `/?details=<symbol>`
+  - preserves other existing query params
 - `app/layout.tsx`
   - root metadata
   - organization JSON-LD
@@ -35,19 +42,20 @@ Community-maintained status dashboard for Bitpanda assets and components.
   - optional `CoffeePopup`
 
 ### Client Side
-- `app/BitpandaStatusClient.tsx` (interactive shell)
+- `app/BitpandaStatusClient.tsx` (interactive shell + modal state + `details` URL sync)
 - `components/status/`
   - `SearchAndFilters.tsx`
   - `UpdatesSection.tsx`
   - `AssetGroupsSection.tsx`
+  - `AssetDetailsModal.tsx`
   - `StatusRenderer.tsx`
 - `features/status/hooks/`
-  - `useStatusUrlState.ts`
+  - `useStatusUrlState.ts` (search/filter URL sync while preserving non-filter params like `details`)
   - `useStatusData.ts`
 - `features/status/types.ts`
 
 ### Shared Logic
-- `lib/api.ts` — fetch + normalize + in-memory cache (60s)
+- `lib/api.ts` — fetch + normalize + in-memory cache (60s), including per-asset networks normalization
 - `lib/contracts.ts` — server/client handoff types
 - `lib/status.ts` — status formatting/token helpers
 
@@ -57,6 +65,7 @@ Configured in `lib/api.ts`:
    - `STATUS_API_BASE_URL`
    - optional `STATUS_API_SETTINGS_URL`
    - optional `STATUS_API_UPDATES_URL`
+   - network data is embedded per asset in `/api/settings`
 2. Bitpanda new-assets endpoint:
    - `BITPANDA_NEW_ASSETS_URL`
 
@@ -93,6 +102,10 @@ NEXT_PUBLIC_SOCIAL_X_URL=https://x.com/your-handle
 NEXT_PUBLIC_SOCIAL_X_HANDLE=@your-handle
 ```
 
+Runtime config in `next.config.ts`:
+- React Compiler enabled
+- `next/image` allowed remote host: `cdn.bitpanda.com` (network logos)
+
 ## Local Development
 ```bash
 npm install
@@ -123,7 +136,9 @@ This project is designed to be easily forkable. To get started:
 - Keep `/` dynamic SSR (`force-dynamic`) and `generateMetadata()` on the server route (`app/page.tsx`).
 - Keep server-side update pinning in `app/page.tsx` before rendering client UI.
 - Keep URL query parameter keys stable:
-  - `search`, `maintenance`, `tradeOnly`, `fullyIntegrated`, `stakeable`, `newAssets`, `fusion`, `limitOrder`, `margin`
+  - filters/search: `search`, `maintenance`, `tradeOnly`, `fullyIntegrated`, `stakeable`, `newAssets`, `fusion`, `limitOrder`, `margin`
+  - asset modal deep-link: `details`
+- Keep `app/[symbol]/page.tsx` behavior as a symbol alias redirect to `/?details=<symbol>`.
 - Do not replace primary server data fetch with client-side fetch.
 
 ## SSR/SEO Guardrails
@@ -142,8 +157,8 @@ npm run start
 Use a reverse proxy (Nginx/Caddy) for TLS and public domain routing.
 
 ## Project Structure
-- `app/` — App Router route files + client shell + robots + sitemap
-- `components/` — shared UI and status section components
+- `app/` — App Router route files (`/`, `/[symbol]`) + client shell + robots + sitemap
+- `components/` — shared UI and status section components (including `AssetDetailsModal`)
 - `features/` — feature-scoped hooks/types (`status/*`)
 - `lib/` — API + shared contracts/helpers
 - `docs/` — architecture and SSR/SEO guardrail contract

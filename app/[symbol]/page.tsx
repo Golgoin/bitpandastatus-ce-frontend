@@ -1,0 +1,40 @@
+import { notFound, redirect } from 'next/navigation';
+import type { SearchParamsRecord } from '../../lib/contracts';
+
+export const dynamic = 'force-dynamic';
+
+interface SymbolAliasPageProps {
+  params: Promise<{ symbol: string }>;
+  searchParams: Promise<SearchParamsRecord>;
+}
+
+const getSearchParamString = (value: string | string[] | undefined) => (
+  Array.isArray(value) ? value[0] ?? '' : value ?? ''
+);
+
+const isValidSymbol = (symbol: string) => /^[a-z0-9]{2,15}$/i.test(symbol);
+
+export default async function SymbolAliasPage(props: SymbolAliasPageProps) {
+  const [{ symbol }, searchParams] = await Promise.all([props.params, props.searchParams]);
+  const normalizedSymbol = (symbol || '').trim().toLowerCase();
+
+  if (!isValidSymbol(normalizedSymbol)) {
+    notFound();
+  }
+
+  const nextParams = new URLSearchParams();
+
+  Object.entries(searchParams ?? {}).forEach(([key, value]) => {
+    if (key === 'details') return;
+
+    const normalizedValue = getSearchParamString(value).trim();
+    if (!normalizedValue) return;
+
+    nextParams.set(key, normalizedValue);
+  });
+
+  nextParams.set('details', normalizedSymbol);
+
+  const nextQuery = nextParams.toString();
+  redirect(nextQuery ? `/?${nextQuery}` : '/');
+}

@@ -31,18 +31,26 @@ export const useStatusUrlState = ({ searchParams, onResetPagination }: UseStatus
   const [debouncedSearch, setDebouncedSearch] = useState<string>(initialSearch);
   const [filters, setFilters] = useState<Filters>(() => getInitialFilters(searchParams));
 
-  const buildUrlParams = useCallback((searchValue: string, activeFilters: Filters) => {
-    const params = new URLSearchParams();
+  const buildUrlParams = useCallback((searchValue: string, activeFilters: Filters, baseParams?: URLSearchParams) => {
+    const params = new URLSearchParams(baseParams?.toString() ?? '');
+
+    params.delete('search');
+    (Object.keys(INITIAL_FILTERS) as Array<keyof Filters>).forEach(key => {
+      params.delete(key);
+    });
+
     if (searchValue) params.set('search', searchValue);
     (Object.keys(activeFilters) as Array<keyof Filters>).forEach(key => {
       if (activeFilters[key]) params.set(key, 'true');
     });
+
     return params;
   }, []);
 
   const replaceUrlState = useCallback((searchValue: string, activeFilters: Filters) => {
     if (typeof window === 'undefined') return;
-    const params = buildUrlParams(searchValue, activeFilters);
+    const currentParams = new URLSearchParams(window.location.search);
+    const params = buildUrlParams(searchValue, activeFilters, currentParams);
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState(null, '', nextUrl);
