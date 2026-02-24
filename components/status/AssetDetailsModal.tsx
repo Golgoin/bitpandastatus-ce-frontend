@@ -344,9 +344,9 @@ export default function AssetDetailsModal({
                       <th className="p-0.5 pl-2 text-left">Network</th>
                       <th className="p-0.5 text-center" title="Deposit allowed" aria-label="Deposit allowed">Dep</th>
                       <th className="p-0.5 text-center" title="Withdraw allowed" aria-label="Withdraw allowed">Wdr</th>
-                      <th className="p-0.5 text-right">Free dep.</th>
                       <th className="p-0.5 text-right">Min dep.</th>
                       <th className="p-0.5 text-right">Dep fee</th>
+                      <th className="p-0.5 text-right">Free dep.</th>
                       <th className="p-0.5 text-right">Min wdr.</th>
                       <th className="p-0.5 pr-2 text-right">Wdr fee</th>
                     </tr>
@@ -370,9 +370,9 @@ export default function AssetDetailsModal({
                         </td>
                         <td className="p-0.5 text-center">{formatNetworkSettingValue('is_deposit_allowed', network.is_deposit_allowed)}</td>
                         <td className="p-0.5 text-center">{formatNetworkSettingValue('is_withdraw_allowed', network.is_withdraw_allowed)}</td>
-                        <td className="p-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('free_deposit_min_threshold', network.free_deposit_min_threshold)}</td>
                         <td className="p-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('minimum_deposit_amount', network.minimum_deposit_amount)}</td>
                         <td className="p-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('wallet_deposit_fee', network.wallet_deposit_fee)}</td>
+                        <td className="p-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('free_deposit_min_threshold', network.free_deposit_min_threshold)}</td>
                         <td className="p-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('minimum_withdrawal_amount', network.minimum_withdrawal_amount)}</td>
                         <td className="px-0.5 pr-2 py-0.5 text-right text-white tabular-nums">{formatNetworkSettingValue('wallet_withdrawal_fee', network.wallet_withdrawal_fee)}</td>
                       </tr>
