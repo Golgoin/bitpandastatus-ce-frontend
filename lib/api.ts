@@ -8,9 +8,11 @@ export interface AssetNetwork {
   is_deposit_allowed: boolean;
   is_withdraw_allowed: boolean;
   is_operational: boolean;
-  min_deposit_threshold: string | null;
-  small_deposit_threshold: string | null;
-  small_deposit_fee: string | null;
+  free_deposit_min_threshold: string | null;
+  minimum_deposit_amount: string | null;
+  wallet_deposit_fee: string | null;
+  minimum_withdrawal_amount: string | null;
+  wallet_withdrawal_fee: string | null;
 }
 
 export interface AssetSetting {
@@ -95,9 +97,11 @@ interface RawAssetNetwork {
   is_deposit_allowed?: boolean | null;
   is_withdraw_allowed?: boolean | null;
   is_operational?: boolean | null;
-  min_deposit_threshold?: string | number | null;
-  small_deposit_threshold?: string | number | null;
-  small_deposit_fee?: string | number | null;
+  free_deposit_min_threshold?: string | number | null;
+  minimum_deposit_amount?: string | number | null;
+  wallet_deposit_fee?: string | number | null;
+  minimum_withdrawal_amount?: string | number | null;
+  wallet_withdrawal_fee?: string | number | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
@@ -302,9 +306,11 @@ const normalizeAssetNetworks = (rawNetworks: unknown): AssetNetwork[] => {
       is_deposit_allowed: network.is_deposit_allowed ?? false,
       is_withdraw_allowed: network.is_withdraw_allowed ?? false,
       is_operational: network.is_operational ?? false,
-      min_deposit_threshold: normalizeOptionalString(network.min_deposit_threshold),
-      small_deposit_threshold: normalizeOptionalString(network.small_deposit_threshold),
-      small_deposit_fee: normalizeOptionalString(network.small_deposit_fee)
+      free_deposit_min_threshold: normalizeOptionalString(network.free_deposit_min_threshold),
+      minimum_deposit_amount: normalizeOptionalString(network.minimum_deposit_amount),
+      wallet_deposit_fee: normalizeOptionalString(network.wallet_deposit_fee),
+      minimum_withdrawal_amount: normalizeOptionalString(network.minimum_withdrawal_amount),
+      wallet_withdrawal_fee: normalizeOptionalString(network.wallet_withdrawal_fee)
     }));
 };
 
