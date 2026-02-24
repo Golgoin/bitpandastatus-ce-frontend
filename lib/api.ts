@@ -1,5 +1,20 @@
 'use server'
 
+export interface AssetNetwork {
+  id: string;
+  name: string;
+  logo_dark: string | null;
+  coin_network_id: string | null;
+  is_deposit_allowed: boolean;
+  is_withdraw_allowed: boolean;
+  is_operational: boolean;
+  free_deposit_min_threshold: string | null;
+  minimum_deposit_amount: string | null;
+  wallet_deposit_fee: string | null;
+  minimum_withdrawal_amount: string | null;
+  wallet_withdrawal_fee: string | null;
+}
+
 export interface AssetSetting {
   pid: string;
   name: string;
@@ -15,6 +30,7 @@ export interface AssetSetting {
   fusion: boolean | null;
   maintenance: boolean | null;
   margin: number;
+  networks: AssetNetwork[];
   isNew?: boolean;
 }
 
@@ -62,6 +78,7 @@ interface RawSetting {
   is_fusion_enabled?: boolean | null;
   is_maintenance?: boolean | null;
   max_leverage?: number | null;
+  networks?: RawAssetNetwork[];
 }
 
 interface RawNewAsset {
@@ -72,9 +89,29 @@ interface RawNewAssetsResponse {
   data?: RawNewAsset[];
 }
 
+interface RawAssetNetwork {
+  id: string;
+  name: string;
+  logo_dark?: string | null;
+  coin_network_id?: string | null;
+  is_deposit_allowed?: boolean | null;
+  is_withdraw_allowed?: boolean | null;
+  is_operational?: boolean | null;
+  free_deposit_min_threshold?: string | number | null;
+  minimum_deposit_amount?: string | number | null;
+  wallet_deposit_fee?: string | number | null;
+  minimum_withdrawal_amount?: string | number | null;
+  wallet_withdrawal_fee?: string | number | null;
+}
+
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   typeof value === 'object' && value !== null && !Array.isArray(value)
 );
+
+const isRawAssetNetwork = (value: unknown): value is RawAssetNetwork => {
+  if (!isRecord(value)) return false;
+  return typeof value.id === 'string' && typeof value.name === 'string';
+};
 
 const normalizeValue = (value: unknown): UpdateStatusValue | null => {
   if (typeof value === 'boolean') return value;
@@ -245,6 +282,38 @@ const normalizeUpdates = (rawUpdates: RawUpdateLog[]): UpdateLog[] => (
   })
 );
 
+const normalizeOptionalString = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (typeof value === 'number') return String(value);
+  return null;
+};
+
+const normalizeAssetNetworks = (rawNetworks: unknown): AssetNetwork[] => {
+  if (!Array.isArray(rawNetworks)) return [];
+
+  return rawNetworks
+    .filter(isRawAssetNetwork)
+    .map(network => ({
+      id: network.id,
+      name: network.name,
+      logo_dark: normalizeOptionalString(network.logo_dark),
+      coin_network_id: normalizeOptionalString(network.coin_network_id),
+      // /settings omits false booleans for these network flags.
+      is_deposit_allowed: network.is_deposit_allowed ?? false,
+      is_withdraw_allowed: network.is_withdraw_allowed ?? false,
+      is_operational: network.is_operational ?? false,
+      free_deposit_min_threshold: normalizeOptionalString(network.free_deposit_min_threshold),
+      minimum_deposit_amount: normalizeOptionalString(network.minimum_deposit_amount),
+      wallet_deposit_fee: normalizeOptionalString(network.wallet_deposit_fee),
+      minimum_withdrawal_amount: normalizeOptionalString(network.minimum_withdrawal_amount),
+      wallet_withdrawal_fee: normalizeOptionalString(network.wallet_withdrawal_fee)
+    }));
+};
+
 // Simple in-memory cache to support blocking revalidation
 const memoryCache = new Map<string, { data: unknown, expiry: number }>();
 
@@ -285,7 +354,7 @@ export async function getAssetData() {
       ]);
 
       if (!settingsRes.ok || !updatesRes.ok || !newAssetsRes.ok) {
-        throw new Error('Failed to fetch asset data from new API');
+        throw new Error('Failed to fetch asset data from API');
       }
 
       const rawSettings: RawSetting[] = await settingsRes.json();
@@ -316,7 +385,8 @@ export async function getAssetData() {
           stakeable: stakingInterest,
           fusion: setting.is_fusion_enabled ?? false,
           maintenance: setting.is_maintenance ?? false,
-          margin: setting.max_leverage ?? 0
+          margin: setting.max_leverage ?? 0,
+          networks: normalizeAssetNetworks(setting.networks)
         };
       });
 

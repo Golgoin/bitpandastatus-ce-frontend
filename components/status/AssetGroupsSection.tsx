@@ -3,6 +3,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowDown, faArrowUp, faChevronUp } from '@fortawesome/free-solid-svg-icons';
+import type { AssetSetting } from '../../lib/api';
 import type { GroupedAssets } from '../../features/status/hooks/useStatusData';
 import { formatStakingInterest, STATUS_SYMBOLS } from './StatusRenderer';
 
@@ -11,6 +12,7 @@ interface AssetGroupsSectionProps {
   debouncedSearch: string;
   expandedGroupAssets: Set<string>;
   onExpandGroup: (groupKey: string) => void;
+  onAssetClick: (asset: AssetSetting) => void;
 }
 
 export default function AssetGroupsSection({
@@ -18,6 +20,7 @@ export default function AssetGroupsSection({
   debouncedSearch,
   expandedGroupAssets,
   onExpandGroup,
+  onAssetClick,
 }: AssetGroupsSectionProps) {
   return (
     <section aria-label="Asset categories" className="space-y-2">
@@ -70,7 +73,15 @@ export default function AssetGroupsSection({
                       return (
                         <tr
                           key={asset.pid}
-                          className={`hover:bg-neutrals-card_fill_secondary/50 transition-colors ${asset.maintenance ? 'bg-orange-900/10' : ''}`}
+                          tabIndex={0}
+                          onClick={() => onAssetClick(asset)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault();
+                              onAssetClick(asset);
+                            }
+                          }}
+                          className={`cursor-pointer hover:bg-neutrals-card_fill_secondary/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-grass-stain-green ${asset.maintenance ? 'bg-orange-900/10' : ''}`}
                         >
                           <td className="px-1 pl-2 py-1 wrap-anywhere font-medium text-xs sm:text-sm text-white">
                             {asset.name}

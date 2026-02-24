@@ -23,26 +23,42 @@ const getInitialFilters = (searchParams: SearchParamsRecord): Filters => {
   return parsedFilters;
 };
 
+const areFiltersEqual = (left: Filters, right: Filters) => (
+  (Object.keys(INITIAL_FILTERS) as Array<keyof Filters>).every(
+    key => left[key] === right[key]
+  )
+);
+
 export const useStatusUrlState = ({ searchParams, onResetPagination }: UseStatusUrlStateParams) => {
   const initialSearch = getInitialSearch(searchParams);
+  const initialFilters = getInitialFilters(searchParams);
 
   const committedSearchRef = useRef<string>(initialSearch);
+  const filtersRef = useRef<Filters>(initialFilters);
   const [search, setSearch] = useState<string>(initialSearch);
   const [debouncedSearch, setDebouncedSearch] = useState<string>(initialSearch);
-  const [filters, setFilters] = useState<Filters>(() => getInitialFilters(searchParams));
+  const [filters, setFilters] = useState<Filters>(initialFilters);
 
-  const buildUrlParams = useCallback((searchValue: string, activeFilters: Filters) => {
-    const params = new URLSearchParams();
+  const buildUrlParams = useCallback((searchValue: string, activeFilters: Filters, baseParams?: URLSearchParams) => {
+    const params = new URLSearchParams(baseParams?.toString() ?? '');
+
+    params.delete('search');
+    (Object.keys(INITIAL_FILTERS) as Array<keyof Filters>).forEach(key => {
+      params.delete(key);
+    });
+
     if (searchValue) params.set('search', searchValue);
     (Object.keys(activeFilters) as Array<keyof Filters>).forEach(key => {
       if (activeFilters[key]) params.set(key, 'true');
     });
+
     return params;
   }, []);
 
   const replaceUrlState = useCallback((searchValue: string, activeFilters: Filters) => {
     if (typeof window === 'undefined') return;
-    const params = buildUrlParams(searchValue, activeFilters);
+    const currentParams = new URLSearchParams(window.location.search);
+    const params = buildUrlParams(searchValue, activeFilters, currentParams);
     const query = params.toString();
     const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
     window.history.replaceState(null, '', nextUrl);
@@ -74,20 +90,23 @@ export const useStatusUrlState = ({ searchParams, onResetPagination }: UseStatus
     const applyParsedState = () => {
       const { parsedSearch, parsedFilters } = parseLocationSearch();
 
-      if (parsedSearch !== committedSearchRef.current) {
+      const didSearchChange = parsedSearch !== committedSearchRef.current;
+      const didFiltersChange = !areFiltersEqual(filtersRef.current, parsedFilters);
+
+      if (didSearchChange) {
         committedSearchRef.current = parsedSearch;
         setSearch(parsedSearch);
         setDebouncedSearch(parsedSearch);
       }
 
-      setFilters(prev => {
-        const isSame = (Object.keys(INITIAL_FILTERS) as Array<keyof Filters>).every(
-          key => prev[key] === parsedFilters[key]
-        );
-        return isSame ? prev : parsedFilters;
-      });
+      if (didFiltersChange) {
+        filtersRef.current = parsedFilters;
+        setFilters(parsedFilters);
+      }
 
-      onResetPagination();
+      if (didSearchChange || didFiltersChange) {
+        onResetPagination();
+      }
     };
 
     applyParsedState();
@@ -96,6 +115,10 @@ export const useStatusUrlState = ({ searchParams, onResetPagination }: UseStatus
 
     return () => window.removeEventListener('popstate', onPopState);
   }, [onResetPagination, parseLocationSearch]);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 100);

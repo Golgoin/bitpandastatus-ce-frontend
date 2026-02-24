@@ -1,12 +1,22 @@
 import { Metadata } from "next";
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import React, { Suspense } from 'react';
 import BitpandaStatusClient from './BitpandaStatusClient';
 import { getAssetData, type UpdateLog } from '../lib/api';
 import type { SearchParamsRecord, UpdateLogWithPin } from '../lib/contracts';
 import { getUpdateStatusToken, statusToText } from '../lib/status';
+import { getSearchParamString } from '../lib/url';
 import Footer from "../components/footer";
 
 export const dynamic = 'force-dynamic';
+
+const ASSET_NOT_FOUND_FLASH_ROUTE = '/api/flash-asset-not-found';
+const ASSET_NOT_FOUND_COOKIE = 'bp_asset_not_found';
+
+const buildFlashRedirectUrl = (symbol: string, returnTo: string) => (
+  `${ASSET_NOT_FOUND_FLASH_ROUTE}?symbol=${encodeURIComponent(symbol)}&returnTo=${encodeURIComponent(returnTo)}`
+);
 
 const applyUpdatePinning = (updates: UpdateLog[]): UpdateLogWithPin[] => {
   if (!updates?.length) return [];
@@ -184,6 +194,35 @@ export default async function BitpandaStatusPage(props: {
   const searchParams = await props.searchParams;
   const data = await getAssetData();
 
+  if (data?.settings?.length) {
+    const detailsParam = getSearchParamString(searchParams?.details).trim().toLowerCase();
+
+    if (detailsParam) {
+      const symbolExists = data.settings.some(
+        asset => asset.symbol.trim().toLowerCase() === detailsParam
+      );
+
+      if (!symbolExists) {
+        const returnParams = new URLSearchParams();
+
+        Object.entries(searchParams ?? {}).forEach(([key, value]) => {
+          if (key === 'details') return;
+
+          const normalizedValue = getSearchParamString(value).trim();
+          if (!normalizedValue) return;
+
+          returnParams.set(key, normalizedValue);
+        });
+
+        const returnTo = returnParams.toString() ? `/?${returnParams.toString()}` : '/';
+        redirect(buildFlashRedirectUrl(detailsParam, returnTo));
+      }
+    }
+  }
+
+  const cookieStore = await cookies();
+  const assetNotFoundSymbol = cookieStore.get(ASSET_NOT_FOUND_COOKIE)?.value ?? null;
+
   const transformed = data
     ? {
       ...data,
@@ -242,7 +281,11 @@ export default async function BitpandaStatusPage(props: {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Suspense fallback={<div className="max-w-7xl mx-auto p-4 text-white">Loading...</div>}>
-        <BitpandaStatusClient data={transformed} searchParams={searchParams} />
+        <BitpandaStatusClient
+          data={transformed}
+          searchParams={searchParams}
+          assetNotFoundSymbol={assetNotFoundSymbol}
+        />
         <Footer />
       </Suspense>
     </>
