@@ -301,9 +301,11 @@ export default function BitpandaStatusClient({
       />
 
       {assetNotFoundFeedback ? (
-        <p role="status" aria-live="polite" className="text-center text-xs text-yellow-300">
-          {assetNotFoundFeedback}
-        </p>
+        <div className="pointer-events-none fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-md border border-yellow-300/40 bg-black/85 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <p role="status" aria-live="polite" className="text-xs text-yellow-200">
+            {assetNotFoundFeedback}
+          </p>
+        </div>
       ) : null}
 
       {shareFeedback ? (

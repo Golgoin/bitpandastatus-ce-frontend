@@ -12,8 +12,6 @@ interface SymbolAliasPageProps {
   searchParams: Promise<SearchParamsRecord>;
 }
 
-const isValidSymbol = (symbol: string) => /^[a-z0-9]{2,15}$/i.test(symbol);
-
 const buildFlashRedirectUrl = (symbol: string, returnTo: string) => (
   `${ASSET_NOT_FOUND_FLASH_ROUTE}?symbol=${encodeURIComponent(symbol)}&returnTo=${encodeURIComponent(returnTo)}`
 );
@@ -35,7 +33,7 @@ export default async function SymbolAliasPage(props: SymbolAliasPageProps) {
 
   const returnTo = baseParams.toString() ? `/?${baseParams.toString()}` : '/';
 
-  if (!isValidSymbol(normalizedSymbol)) {
+  if (!normalizedSymbol) {
     redirect(buildFlashRedirectUrl(requestedSymbol || 'unknown', returnTo));
   }
 
